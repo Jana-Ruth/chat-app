@@ -24,6 +24,7 @@ import {
   Paperclip,
   Pencil,
   Phone,
+  Reply,
   Search,
   Smile,
   Square,
@@ -82,12 +83,34 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
   const [highlightedId, setHighlightedId] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const bottomRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
   const messageRefs = useRef(new Map());
   const readSentRef = useRef(new Set());
   const voiceRecorder = useVoiceRecorder();
+
+  useEffect(() => {
+    if (!notice) return undefined;
+    const timer = setTimeout(() => setNotice(null), 3200);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
+  function showNotice(type, message) {
+    setNotice({ type, message });
+  }
+
+  function askConfirm(options) {
+    setConfirmDialog(options);
+  }
+
+  async function runConfirmedAction() {
+    const action = confirmDialog?.onConfirm;
+    setConfirmDialog(null);
+    if (action) await action();
+  }
 
   const otherParticipant = conversation && !conversation.isGroup
     ? conversation.participants.find((p) => (p.id || p._id) !== user.id)
@@ -244,14 +267,17 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
     if (!trimmed && !attachment && !sticker) return;
 
     socket.emit('message:send', { conversationId: conversation._id, text: sticker ? '' : trimmed, attachment, sticker, replyTo: replyingTo?._id }, (res) => {
-      if (res?.error) console.error(res.error);
-      else playSendSound();
+      if (res?.error) {
+        showNotice('error', res.error);
+      } else {
+        playSendSound();
+        showNotice('success', 'Message sent');
+      }
     });
     if (!sticker) setText('');
     setReplyingTo(null);
     socket.emit('typing:stop', { conversationId: conversation._id });
   }
-
   async function handleSend(e) {
     e.preventDefault();
 
@@ -262,7 +288,7 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
         await sendMessage({ attachment });
         setPendingUpload(null);
       } catch (err) {
-        console.error('Upload failed:', err);
+        showNotice('error', err.response?.data?.error || 'Upload failed');
       } finally {
         setUploading(false);
       }
@@ -293,7 +319,7 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
         attachment.duration = result.duration;
         await sendMessage({ attachment });
       } catch (err) {
-        console.error('Voice note upload failed:', err);
+        showNotice('error', err.response?.data?.error || 'Voice note upload failed');
       } finally {
         setUploading(false);
       }
@@ -301,7 +327,7 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
       try {
         await voiceRecorder.start();
       } catch (err) {
-        console.error('Microphone access denied or unavailable:', err);
+        showNotice('error', 'Microphone access denied or unavailable');
       }
     }
   }
@@ -349,7 +375,8 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
   function saveEdit(messageId) {
     if (!editText.trim() || !socket) return;
     socket.emit('message:edit', { messageId, text: editText.trim() }, (res) => {
-      if (res?.error) console.error(res.error);
+      if (res?.error) showNotice('error', res.error);
+      else showNotice('success', 'Message updated');
     });
     setEditingId(null);
     setEditText('');
@@ -357,22 +384,37 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
 
   function handleDelete(messageId) {
     if (!socket) return;
-    if (!window.confirm('Delete this message? This cannot be undone.')) return;
-    socket.emit('message:delete', { messageId }, (res) => {
-      if (res?.error) console.error(res.error);
+    askConfirm({
+      title: 'Delete message?',
+      message: 'This message will be removed from the chat.',
+      confirmLabel: 'Delete',
+      danger: true,
+      onConfirm: () => {
+        socket.emit('message:delete', { messageId }, (res) => {
+          if (res?.error) showNotice('error', res.error);
+          else showNotice('success', 'Message deleted');
+        });
+      },
     });
   }
-
   async function handleClearChat() {
     if (!conversation || messages.length === 0) return;
-    if (!window.confirm('Clear this chat on your side? New messages will still appear.')) return;
-    try {
-      await api.post(`/conversations/${conversation._id}/clear`);
-      setMessages([]);
-      onConversationUpdated({ ...conversation, lastMessage: null });
-    } catch (err) {
-      console.error('Failed to clear chat:', err);
-    }
+    askConfirm({
+      title: 'Clear chat?',
+      message: 'This clears the visible chat history on your side. New messages will still appear.',
+      confirmLabel: 'Clear chat',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await api.post(`/conversations/${conversation._id}/clear`);
+          setMessages([]);
+          onConversationUpdated({ ...conversation, lastMessage: null });
+          showNotice('success', 'Chat cleared');
+        } catch (err) {
+          showNotice('error', err.response?.data?.error || 'Failed to clear chat');
+        }
+      },
+    });
   }
   function handleJumpToMessage(messageId) {
     const el = messageRefs.current.get(messageId);
@@ -598,6 +640,28 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
           onEmoji={handleEmojiSelect}
           onSticker={handleStickerSend}
         />
+      )}
+
+      {notice && (
+        <div className={`chat-toast ${notice.type}`}>
+          <span>{notice.message}</span>
+          <button type="button" onClick={() => setNotice(null)}><X size={14} /></button>
+        </div>
+      )}
+
+      {confirmDialog && (
+        <div className="confirm-modal-backdrop">
+          <div className="confirm-modal">
+            <h3>{confirmDialog.title}</h3>
+            <p>{confirmDialog.message}</p>
+            <div className="confirm-modal-actions">
+              <button type="button" className="secondary-btn" onClick={() => setConfirmDialog(null)}>Cancel</button>
+              <button type="button" className={confirmDialog.danger ? 'danger-btn' : 'primary-btn'} onClick={runConfirmedAction}>
+                {confirmDialog.confirmLabel || 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {replyingTo && (

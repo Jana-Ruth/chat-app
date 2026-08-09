@@ -13,6 +13,7 @@ import SettingsPage from './pages/SettingsPage';
 import FeedPage from './pages/FeedPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import CallOverlay from './components/CallOverlay';
+import ErrorBoundary from './components/ErrorBoundary';
 import './styles.css';
 
 export default function App() {
@@ -22,45 +23,47 @@ export default function App() {
         <SocketProvider>
           <CallProvider>
             <BrowserRouter>
-              <CallOverlay />
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <ChatPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/feed"
-                  element={
-                    <ProtectedRoute>
-                      <FeedPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile/:userId"
-                  element={
-                    <ProtectedRoute>
-                      <ProfilePage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute>
-                      <SettingsPage />
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
+              <ErrorBoundary>
+                <CallOverlay />
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route
+                    path="/"
+                    element={
+                      <ProtectedRoute>
+                        <ChatPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/feed"
+                    element={
+                      <ProtectedRoute>
+                        <FeedPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile/:userId"
+                    element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <ProtectedRoute>
+                        <SettingsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </ErrorBoundary>
             </BrowserRouter>
           </CallProvider>
         </SocketProvider>
