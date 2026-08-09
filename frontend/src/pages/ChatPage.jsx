@@ -86,6 +86,10 @@ export default function ChatPage() {
     };
   }, [socket]);
 
+  function handleSelectConversation(conv) {
+    setActive(conv);
+  }
+
   function handleConversationCreated(conv) {
     setConversations((prev) => {
       const exists = prev.some((c) => c._id === conv._id);
@@ -105,17 +109,18 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="chat-page">
+    <div className={`chat-page ${active ? 'chat-selected' : 'chat-listing'}`}> 
       <Sidebar
         conversations={conversations}
         activeId={active?._id}
-        onSelect={setActive}
+        onSelect={handleSelectConversation}
         onConversationCreated={handleConversationCreated}
       />
       <ChatWindow
         conversation={active}
         onConversationUpdated={handleConversationUpdated}
         onLeftGroup={handleLeftGroup}
+        onBack={() => setActive(null)}
       />
     </div>
   );

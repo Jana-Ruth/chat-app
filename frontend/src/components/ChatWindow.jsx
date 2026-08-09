@@ -17,6 +17,7 @@ import MessageSearch from './MessageSearch';
 import Avatar from './Avatar';
 import EmojiStickerTray from './EmojiStickerTray';
 import {
+  ArrowLeft,
   Image,
   Mic,
   Paperclip,
@@ -60,7 +61,7 @@ function backgroundStyle(bg) {
   return {};
 }
 
-export default function ChatWindow({ conversation, onConversationUpdated, onLeftGroup }) {
+export default function ChatWindow({ conversation, onConversationUpdated, onLeftGroup, onBack }) {
   const { user } = useAuth();
   const { socket } = useSocket();
   const { startCall, callState } = useCall();
@@ -354,6 +355,9 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
   return (
     <div className="chat-window" style={backgroundStyle(background)}>
       <div className="chat-window-header">
+        <button className="mobile-chat-back" type="button" onClick={onBack} title="Back to chats">
+          <ArrowLeft size={18} />
+        </button>
         {conversation.isGroup ? (
           <button className="chat-header-title" onClick={() => setShowGroupPanel(true)}>
             <span className="avatar" style={{ width: 34, height: 34, fontSize: 14 }}><Users size={16} /></span>
