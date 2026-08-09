@@ -109,7 +109,7 @@ export default function CallOverlay() {
       <div className="call-card">
         {isVideo && callState === 'active' && !videoOff ? (
           <>
-            <video ref={remoteVideoRef} className="call-remote-video" autoPlay playsInline />
+            <video ref={remoteVideoRef} className="call-remote-video" autoPlay playsInline muted />
             <video ref={localVideoRef} className="call-local-video" autoPlay playsInline muted />
             <div className="call-video-header">
               <span>{callInfo.otherUser.username}</span>
@@ -135,9 +135,11 @@ export default function CallOverlay() {
                 Ends in {formatDuration(ringingRemaining)}
               </div>
             )}
-            <audio ref={remoteAudioRef} autoPlay hidden />
+
           </div>
         )}
+
+        <audio ref={remoteAudioRef} autoPlay playsInline hidden />
 
         <div className="call-controls">
           {callState === 'incoming' && (

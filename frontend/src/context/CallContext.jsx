@@ -31,6 +31,7 @@ export function CallProvider({ children }) {
 
   const pcRef = useRef(null);
   const pendingCandidatesRef = useRef([]);
+  const remoteStreamRef = useRef(null);
   const timerRef = useRef(null);
   const ringingIntervalRef = useRef(null);
   const ringingTimeoutRef = useRef(null);
@@ -57,6 +58,7 @@ export function CallProvider({ children }) {
 
     localStream?.getTracks().forEach((t) => t.stop());
     setLocalStream(null);
+    remoteStreamRef.current = null;
     setRemoteStream(null);
     setMuted(false);
     setVideoOff(false);
@@ -97,6 +99,9 @@ export function CallProvider({ children }) {
 
   function createPeerConnection(otherUserId) {
     const pc = new RTCPeerConnection(ICE_SERVERS);
+    const remoteMedia = new MediaStream();
+    remoteStreamRef.current = remoteMedia;
+    setRemoteStream(remoteMedia);
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
@@ -105,12 +110,17 @@ export function CallProvider({ children }) {
     };
 
     pc.ontrack = (e) => {
-      setRemoteStream(e.streams[0]);
+      const stream = remoteStreamRef.current || new MediaStream();
+      remoteStreamRef.current = stream;
+      if (!stream.getTracks().some((track) => track.id === e.track.id)) {
+        stream.addTrack(e.track);
+      }
+      setRemoteStream(stream);
     };
 
     pc.onconnectionstatechange = () => {
-      if (['failed', 'closed'].includes(pc.connectionState)) {
-        setError('Call connection lost');
+      if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
+        setError('Call connection lost. Check both users have camera/microphone permission and a stable network.');
         endCall({ notifyRemote: false, logStatus: 'completed' });
       }
     };

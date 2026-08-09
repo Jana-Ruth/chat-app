@@ -20,6 +20,7 @@ import {
   ArrowLeft,
   Image,
   Mic,
+  MoreVertical,
   Paperclip,
   Pencil,
   Phone,
@@ -73,6 +74,7 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
   const [showBgPicker, setShowBgPicker] = useState(false);
   const [showGroupPanel, setShowGroupPanel] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [showEmojiTray, setShowEmojiTray] = useState(false);
   const [emojiTab, setEmojiTab] = useState('emoji');
   const [background, setBackground] = useState(null);
@@ -110,6 +112,7 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
     setPendingUpload(null);
     setEditingId(null);
     setShowEmojiTray(false);
+    setShowHeaderMenu(false);
     readSentRef.current = new Set();
     setBackground(loadBackground(conversation._id));
     api.get(`/conversations/${conversation._id}/messages`).then(({ data }) => {
@@ -274,6 +277,7 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
   function handleStickerSend(sticker) {
     sendMessage({ sticker });
     setShowEmojiTray(false);
+    setShowHeaderMenu(false);
   }
 
   async function handleVoiceToggle() {
@@ -404,9 +408,21 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
               </button>
             </>
           )}
-          <button className="icon-toggle" title="Search messages" onClick={() => setShowSearch(true)}><Search size={17} /></button>
-          <button className="icon-toggle" title="Chat background" onClick={() => setShowBgPicker(true)}><Image size={17} /></button>
-          <button className="icon-toggle danger-icon" title="Clear chat" onClick={handleClearChat} disabled={messages.length === 0}><Trash2 size={17} /></button>
+          <div className="chat-secondary-actions">
+            <button className="icon-toggle" title="Search messages" onClick={() => setShowSearch(true)}><Search size={17} /></button>
+            <button className="icon-toggle" title="Chat background" onClick={() => setShowBgPicker(true)}><Image size={17} /></button>
+            <button className="icon-toggle danger-icon" title="Clear chat" onClick={handleClearChat} disabled={messages.length === 0}><Trash2 size={17} /></button>
+          </div>
+          <div className="mobile-header-menu">
+            <button className="icon-toggle" title="More options" onClick={() => setShowHeaderMenu((open) => !open)}><MoreVertical size={17} /></button>
+            {showHeaderMenu && (
+              <div className="mobile-header-menu-panel">
+                <button type="button" onClick={() => { setShowSearch(true); setShowHeaderMenu(false); }}><Search size={15} /> Search</button>
+                <button type="button" onClick={() => { setShowBgPicker(true); setShowHeaderMenu(false); }}><Image size={15} /> Background</button>
+                <button type="button" className="danger" onClick={() => { setShowHeaderMenu(false); handleClearChat(); }} disabled={messages.length === 0}><Trash2 size={15} /> Clear chat</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
