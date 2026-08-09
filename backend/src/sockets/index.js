@@ -64,7 +64,7 @@ function initSockets(io) {
     });
 
     // ---- send a message (text and/or an attachment uploaded via POST /api/uploads first) ----
-    socket.on('message:send', async ({ conversationId, text, attachment, sticker }, ack) => {
+    socket.on('message:send', async ({ conversationId, text, attachment, sticker, replyTo }, ack) => {
       try {
         const hasText = text && text.trim();
         const hasAttachment = attachment && attachment.url;
@@ -94,6 +94,14 @@ function initSockets(io) {
           }
         }
 
+        let replyMessageId = null;
+        if (replyTo) {
+          const replyMessage = await Message.findById(replyTo).select('_id conversation deleted');
+          if (replyMessage && replyMessage.conversation.toString() === conversationId && !replyMessage.deleted) {
+            replyMessageId = replyMessage._id;
+          }
+        }
+
         // Anyone else in this conversation who's currently online receives the
         // broadcast instantly, so we can mark the message delivered to them right away.
         const otherParticipantIds = conversation.participants.map((p) => p.toString()).filter((p) => p !== userId);
@@ -105,6 +113,7 @@ function initSockets(io) {
           text: hasText ? text.trim() : '',
           attachment: hasAttachment ? attachment : undefined,
           sticker: hasSticker ? sticker : undefined,
+          replyTo: replyMessageId || undefined,
           readBy: [userId],
           deliveredTo: [userId, ...deliveredNow],
         });
@@ -112,7 +121,10 @@ function initSockets(io) {
         conversation.lastMessage = message._id;
         await conversation.save();
 
-        const populated = await message.populate('sender', 'username avatarUrl');
+        const populated = await message.populate([
+          { path: 'sender', select: 'username avatarUrl' },
+          { path: 'replyTo', populate: { path: 'sender', select: 'username' } },
+        ]);
 
         io.to(`conversation:${conversationId}`).emit('message:new', populated);
         ack?.({ message: populated });
@@ -141,7 +153,10 @@ function initSockets(io) {
         conversation.lastMessage = message._id;
         await conversation.save();
 
-        const populated = await message.populate('sender', 'username avatarUrl');
+        const populated = await message.populate([
+          { path: 'sender', select: 'username avatarUrl' },
+          { path: 'replyTo', populate: { path: 'sender', select: 'username' } },
+        ]);
         io.to(`conversation:${conversationId}`).emit('message:new', populated);
         ack?.({ message: populated });
       } catch (err) {
@@ -168,7 +183,10 @@ function initSockets(io) {
         message.editedAt = new Date();
         await message.save();
 
-        const populated = await message.populate('sender', 'username avatarUrl');
+        const populated = await message.populate([
+          { path: 'sender', select: 'username avatarUrl' },
+          { path: 'replyTo', populate: { path: 'sender', select: 'username' } },
+        ]);
         io.to(`conversation:${message.conversation}`).emit('message:edited', populated);
         ack?.({ message: populated });
       } catch (err) {

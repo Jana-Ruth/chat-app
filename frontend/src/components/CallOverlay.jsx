@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useCall } from '../context/CallContext';
 import Avatar from './Avatar';
-import { Check, Mic, MicOff, PhoneOff, Video, VideoOff, X } from 'lucide-react';
+import { Check, Mic, MicOff, PhoneOff, Video, VideoOff, Volume1, Volume2, X } from 'lucide-react';
 
 const RING_TIMEOUT_SECONDS = 60;
 
@@ -57,6 +57,7 @@ export default function CallOverlay() {
     ringingRemaining,
     muted,
     videoOff,
+    speakerOn,
     error,
     acceptCall,
     declineCall,
@@ -64,6 +65,7 @@ export default function CallOverlay() {
     endCall,
     toggleMute,
     toggleVideo,
+    toggleSpeaker,
     clearError,
   } = useCall();
 
@@ -74,13 +76,27 @@ export default function CallOverlay() {
   useRingtone(callState === 'incoming' || callState === 'outgoing');
 
   useEffect(() => {
-    if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
-  }, [localStream]);
+    const video = localVideoRef.current;
+    if (!video) return;
+    video.srcObject = localStream;
+    if (localStream) video.play?.().catch(() => {});
+  }, [localStream, callState, videoOff]);
 
   useEffect(() => {
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
-    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = remoteStream;
-  }, [remoteStream]);
+    const video = remoteVideoRef.current;
+    const audio = remoteAudioRef.current;
+
+    if (video) {
+      video.srcObject = remoteStream;
+      if (remoteStream) video.play?.().catch(() => {});
+    }
+
+    if (audio) {
+      audio.srcObject = remoteStream;
+      audio.volume = speakerOn ? 1 : 0.45;
+      if (remoteStream) audio.play?.().catch(() => {});
+    }
+  }, [remoteStream, callState, videoOff, speakerOn, callInfo?.callType]);
 
   if (error && callState === 'idle') {
     return (
@@ -109,8 +125,8 @@ export default function CallOverlay() {
       <div className="call-card">
         {isVideo && callState === 'active' && !videoOff ? (
           <>
-            <video ref={remoteVideoRef} className="call-remote-video" autoPlay playsInline muted />
-            <video ref={localVideoRef} className="call-local-video" autoPlay playsInline muted />
+            <video ref={remoteVideoRef} className="call-remote-video" autoPlay playsInline muted controls={false} />
+            <video ref={localVideoRef} className="call-local-video" autoPlay playsInline muted controls={false} />
             <div className="call-video-header">
               <span>{callInfo.otherUser.username}</span>
               <span className="call-video-duration">{formatDuration(duration)}</span>
@@ -163,6 +179,9 @@ export default function CallOverlay() {
             <>
               <button className={`call-btn mute ${muted ? 'active' : ''}`} onClick={toggleMute} title="Mute">
                 {muted ? <MicOff size={22} /> : <Mic size={22} />}
+              </button>
+              <button className={`call-btn speaker-toggle ${speakerOn ? 'active' : ''}`} onClick={toggleSpeaker} title={speakerOn ? 'Speaker on' : 'Normal volume'}>
+                {speakerOn ? <Volume2 size={22} /> : <Volume1 size={22} />}
               </button>
               {isVideo && (
                 <button className={`call-btn video-toggle ${videoOff ? 'active' : ''}`} onClick={toggleVideo} title="Toggle video">

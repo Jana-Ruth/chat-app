@@ -27,6 +27,7 @@ export function CallProvider({ children }) {
   const [ringingRemaining, setRingingRemaining] = useState(RING_TIMEOUT_SECONDS);
   const [muted, setMuted] = useState(false);
   const [videoOff, setVideoOff] = useState(false);
+  const [speakerOn, setSpeakerOn] = useState(false);
   const [error, setError] = useState('');
 
   const pcRef = useRef(null);
@@ -62,6 +63,7 @@ export function CallProvider({ children }) {
     setRemoteStream(null);
     setMuted(false);
     setVideoOff(false);
+    setSpeakerOn(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localStream]);
 
@@ -110,12 +112,13 @@ export function CallProvider({ children }) {
     };
 
     pc.ontrack = (e) => {
-      const stream = remoteStreamRef.current || new MediaStream();
-      remoteStreamRef.current = stream;
-      if (!stream.getTracks().some((track) => track.id === e.track.id)) {
-        stream.addTrack(e.track);
+      const baseStream = remoteStreamRef.current || new MediaStream();
+      if (!baseStream.getTracks().some((track) => track.id === e.track.id)) {
+        baseStream.addTrack(e.track);
       }
-      setRemoteStream(stream);
+      const nextStream = new MediaStream(baseStream.getTracks());
+      remoteStreamRef.current = nextStream;
+      setRemoteStream(nextStream);
     };
 
     pc.onconnectionstatechange = () => {
@@ -303,6 +306,10 @@ export function CallProvider({ children }) {
     setVideoOff((v) => !v);
   }
 
+  function toggleSpeaker() {
+    setSpeakerOn((value) => !value);
+  }
+
   // ---- global socket listeners for incoming call signaling ----
   useEffect(() => {
     if (!socket) return;
@@ -407,6 +414,7 @@ export function CallProvider({ children }) {
         ringingRemaining,
         muted,
         videoOff,
+        speakerOn,
         error,
         startCall,
         acceptCall,
@@ -415,6 +423,7 @@ export function CallProvider({ children }) {
         endCall,
         toggleMute,
         toggleVideo,
+        toggleSpeaker,
         clearError: () => setError(''),
       }}
     >

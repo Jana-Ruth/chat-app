@@ -77,6 +77,7 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [showEmojiTray, setShowEmojiTray] = useState(false);
   const [emojiTab, setEmojiTab] = useState('emoji');
+  const [replyingTo, setReplyingTo] = useState(null);
   const [background, setBackground] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
@@ -242,11 +243,12 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
     const trimmed = text.trim();
     if (!trimmed && !attachment && !sticker) return;
 
-    socket.emit('message:send', { conversationId: conversation._id, text: sticker ? '' : trimmed, attachment, sticker }, (res) => {
+    socket.emit('message:send', { conversationId: conversation._id, text: sticker ? '' : trimmed, attachment, sticker, replyTo: replyingTo?._id }, (res) => {
       if (res?.error) console.error(res.error);
       else playSendSound();
     });
     if (!sticker) setText('');
+    setReplyingTo(null);
     socket.emit('typing:stop', { conversationId: conversation._id });
   }
 
@@ -308,6 +310,30 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
     setBackground(bg);
     localStorage.setItem(backgroundStorageKey(conversation._id), JSON.stringify(bg));
     setShowBgPicker(false);
+  }
+
+  function replyLabel(message) {
+    if (!message || message.deleted) return 'Message';
+    if (message.text) return message.text;
+    if (message.sticker?.label) return message.sticker.label;
+    if (message.attachment?.type === 'audio') return 'Voice note';
+    if (message.attachment?.type === 'video') return 'Video';
+    if (message.attachment?.type === 'image') return 'Photo';
+    if (message.call?.callType) return `${message.call.callType === 'video' ? 'Video' : 'Voice'} call`;
+    return 'Message';
+  }
+
+  function replyAuthor(message) {
+    const senderId = message?.sender?._id || message?.sender;
+    if (!senderId) return '';
+    if (senderId === user.id) return 'You';
+    return message.sender?.username || 'Contact';
+  }
+
+  function startReply(message) {
+    if (!message || message.deleted) return;
+    setReplyingTo(message);
+    setShowEmojiTray(false);
   }
 
   function startEdit(message) {
@@ -509,6 +535,12 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
                         <small>{m.sticker.label}</small>
                       </div>
                     )}
+                    {m.replyTo && (
+                      <div className="reply-quote" onClick={() => handleJumpToMessage(m.replyTo._id)}>
+                        <strong>{replyAuthor(m.replyTo)}</strong>
+                        <span>{replyLabel(m.replyTo)}</span>
+                      </div>
+                    )}
                     {m.text && <div className="bubble">{m.text}</div>}
                   </>
                 )}
@@ -521,12 +553,15 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
                   )}
                 </span>
 
-                {isMine && !m.deleted && !isEditing && (
+                {!m.deleted && !isEditing && (
                   <div className="message-actions">
-                    {m.text && !m.attachment?.url && (
+                    <button onClick={() => startReply(m)} title="Reply"><Reply size={13} /></button>
+                    {isMine && m.text && !m.attachment?.url && (
                       <button onClick={() => startEdit(m)} title="Edit"><Pencil size={13} /></button>
                     )}
-                    <button onClick={() => handleDelete(m._id)} title="Delete"><Trash2 size={13} /></button>
+                    {isMine && (
+                      <button onClick={() => handleDelete(m._id)} title="Delete"><Trash2 size={13} /></button>
+                    )}
                   </div>
                 )}
               </div>
@@ -563,6 +598,16 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
           onEmoji={handleEmojiSelect}
           onSticker={handleStickerSend}
         />
+      )}
+
+      {replyingTo && (
+        <div className="reply-composer-preview">
+          <span>
+            <strong>Replying to {replyAuthor(replyingTo)}</strong>
+            <small>{replyLabel(replyingTo)}</small>
+          </span>
+          <button type="button" onClick={() => setReplyingTo(null)} title="Cancel reply"><X size={15} /></button>
+        </div>
       )}
 
       <form className="message-input" onSubmit={handleSend}>

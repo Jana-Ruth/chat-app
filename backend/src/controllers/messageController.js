@@ -33,7 +33,8 @@ async function getMessages(req, res) {
   const messages = await Message.find(query)
     .sort({ createdAt: -1 })
     .limit(Math.min(Number(limit) || 30, 100))
-    .populate('sender', 'username avatarUrl');
+    .populate('sender', 'username avatarUrl')
+    .populate({ path: 'replyTo', populate: { path: 'sender', select: 'username' } });
 
   res.json({ messages: messages.reverse() });
 }
@@ -63,7 +64,8 @@ async function searchMessages(req, res) {
   const messages = await Message.find(query)
     .sort({ createdAt: -1 })
     .limit(50)
-    .populate('sender', 'username avatarUrl');
+    .populate('sender', 'username avatarUrl')
+    .populate({ path: 'replyTo', populate: { path: 'sender', select: 'username' } });
 
   res.json({ messages });
 }

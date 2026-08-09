@@ -33,6 +33,11 @@ const messageSchema = new mongoose.Schema(
       emoji: { type: String, default: null },
       accent: { type: String, default: null },
     },
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message',
+      default: null,
+    },
     readBy: [
       {
         type: mongoose.Schema.Types.ObjectId,
