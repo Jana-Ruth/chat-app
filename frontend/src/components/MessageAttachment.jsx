@@ -1,5 +1,5 @@
 import { mediaUrl } from '../utils/media';
-import { Mic } from 'lucide-react';
+import { Mic, Music2 } from 'lucide-react';
 
 function formatDuration(seconds) {
   if (!seconds && seconds !== 0) return '';
@@ -29,11 +29,19 @@ export default function MessageAttachment({ attachment }) {
   if (attachment.type === 'audio') {
     return (
       <div className="voice-note">
-        <span className="voice-note-icon"><Mic size={14} /></span>
-        <audio src={url} controls />
-        {attachment.duration ? (
-          <span className="voice-note-duration">{formatDuration(attachment.duration)}</span>
-        ) : null}
+        <span className="voice-note-icon"><Mic size={17} /></span>
+        <span className="voice-note-main">
+          <span className="voice-note-topline">
+            <span><Music2 size={13} /> Voice note</span>
+            {attachment.duration ? (
+              <span className="voice-note-duration">{formatDuration(attachment.duration)}</span>
+            ) : null}
+          </span>
+          <span className="voice-note-wave" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </span>
+          <audio src={url} controls />
+        </span>
       </div>
     );
   }

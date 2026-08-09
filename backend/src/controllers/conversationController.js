@@ -1,6 +1,11 @@
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
 
+function clearedAtFor(conversation, userId) {
+  const marker = conversation.clearedFor?.find((entry) => entry.user.toString() === userId);
+  return marker?.clearedAt || null;
+}
+
 // GET /api/conversations - list all conversations for the logged-in user
 async function listConversations(req, res) {
   const conversations = await Conversation.find({ participants: req.userId })
@@ -11,7 +16,16 @@ async function listConversations(req, res) {
     })
     .sort({ updatedAt: -1 });
 
-  res.json({ conversations });
+  const visibleConversations = conversations.map((conversation) => {
+    const clearedAt = clearedAtFor(conversation, req.userId);
+    const json = conversation.toObject();
+    if (clearedAt && json.lastMessage && new Date(json.lastMessage.createdAt) <= clearedAt) {
+      json.lastMessage = null;
+    }
+    return json;
+  });
+
+  res.json({ conversations: visibleConversations });
 }
 
 // POST /api/conversations - create a 1:1 or group conversation
@@ -133,10 +147,32 @@ async function leaveConversation(req, res) {
   res.json({ success: true });
 }
 
+// POST /api/conversations/:id/clear - hide prior messages for the current user
+async function clearConversation(req, res) {
+  const { id } = req.params;
+  const conversation = await Conversation.findById(id);
+  if (!conversation) return res.status(404).json({ error: 'Conversation not found' });
+  if (!conversation.participants.some((p) => p.toString() === req.userId)) {
+    return res.status(403).json({ error: 'Not a participant of this conversation' });
+  }
+
+  const clearedAt = new Date();
+  const marker = conversation.clearedFor.find((entry) => entry.user.toString() === req.userId);
+  if (marker) {
+    marker.clearedAt = clearedAt;
+  } else {
+    conversation.clearedFor.push({ user: req.userId, clearedAt });
+  }
+
+  await conversation.save();
+  res.json({ success: true, clearedAt });
+}
+
 module.exports = {
   listConversations,
   createConversation,
   addParticipant,
   removeParticipant,
   leaveConversation,
+  clearConversation,
 };

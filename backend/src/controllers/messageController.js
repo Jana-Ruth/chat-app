@@ -1,6 +1,11 @@
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 
+function clearedAtFor(conversation, userId) {
+  const marker = conversation.clearedFor?.find((entry) => entry.user.toString() === userId);
+  return marker?.clearedAt || null;
+}
+
 // GET /api/conversations/:id/messages?before=<messageId>&limit=30
 async function getMessages(req, res) {
   const { id } = req.params;
@@ -13,9 +18,16 @@ async function getMessages(req, res) {
   }
 
   const query = { conversation: id };
+  const clearedAt = clearedAtFor(conversation, req.userId);
+  if (clearedAt) query.createdAt = { $gt: clearedAt };
   if (before) {
     const beforeMsg = await Message.findById(before);
-    if (beforeMsg) query.createdAt = { $lt: beforeMsg.createdAt };
+    if (beforeMsg) {
+      query.createdAt = {
+        ...(query.createdAt || {}),
+        $lt: beforeMsg.createdAt,
+      };
+    }
   }
 
   const messages = await Message.find(query)
@@ -40,11 +52,15 @@ async function searchMessages(req, res) {
   }
 
   const regex = new RegExp(q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-  const messages = await Message.find({
+  const query = {
     conversation: id,
     deleted: { $ne: true },
     text: regex,
-  })
+  };
+  const clearedAt = clearedAtFor(conversation, req.userId);
+  if (clearedAt) query.createdAt = { $gt: clearedAt };
+
+  const messages = await Message.find(query)
     .sort({ createdAt: -1 })
     .limit(50)
     .populate('sender', 'username avatarUrl');

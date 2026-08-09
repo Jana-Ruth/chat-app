@@ -5,6 +5,7 @@ const {
   addParticipant,
   removeParticipant,
   leaveConversation,
+  clearConversation,
 } = require('../controllers/conversationController');
 const { getMessages, searchMessages } = require('../controllers/messageController');
 const { requireAuth } = require('../middleware/auth');
@@ -18,6 +19,7 @@ router.post('/', createConversation);
 router.post('/:id/participants', addParticipant);
 router.delete('/:id/participants/:userId', removeParticipant);
 router.post('/:id/leave', leaveConversation);
+router.post('/:id/clear', clearConversation);
 router.get('/:id/messages', getMessages);
 router.get('/:id/messages/search', searchMessages);
 

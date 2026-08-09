@@ -2996,3 +2996,103 @@ body {
     margin-left: 8px;
   }
 }
+.voice-note {
+  min-width: min(320px, 72vw);
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--surface) 86%, transparent), color-mix(in srgb, var(--accent-soft) 68%, transparent));
+}
+
+.message.mine .voice-note {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 88%, #ffffff), var(--accent));
+  color: var(--accent-ink);
+}
+
+.voice-note-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.message.mine .voice-note-icon {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.voice-note-main {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 7px;
+}
+
+.voice-note-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.voice-note-topline span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.message.mine .voice-note-topline,
+.message.mine .voice-note-duration {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.voice-note-wave {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+}
+
+.voice-note-wave i {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 58%, var(--border));
+}
+
+.voice-note-wave i:nth-child(2),
+.voice-note-wave i:nth-child(8) { height: 14px; }
+.voice-note-wave i:nth-child(3),
+.voice-note-wave i:nth-child(6) { height: 18px; }
+.voice-note-wave i:nth-child(5) { height: 12px; }
+
+.message.mine .voice-note-wave i {
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.voice-note audio {
+  width: 100%;
+  max-width: 260px;
+  height: 34px;
+  filter: saturate(0.9);
+}
+
+.danger-icon {
+  color: var(--live);
+}
+
+.danger-icon:hover:not(:disabled) {
+  background: var(--live-soft);
+  border-color: color-mix(in srgb, var(--live) 30%, var(--border));
+}

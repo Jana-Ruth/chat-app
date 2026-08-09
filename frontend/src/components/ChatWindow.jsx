@@ -333,6 +333,17 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
     });
   }
 
+  async function handleClearChat() {
+    if (!conversation || messages.length === 0) return;
+    if (!window.confirm('Clear this chat on your side? New messages will still appear.')) return;
+    try {
+      await api.post(`/conversations/${conversation._id}/clear`);
+      setMessages([]);
+      onConversationUpdated({ ...conversation, lastMessage: null });
+    } catch (err) {
+      console.error('Failed to clear chat:', err);
+    }
+  }
   function handleJumpToMessage(messageId) {
     const el = messageRefs.current.get(messageId);
     if (!el) return;
@@ -395,6 +406,7 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
           )}
           <button className="icon-toggle" title="Search messages" onClick={() => setShowSearch(true)}><Search size={17} /></button>
           <button className="icon-toggle" title="Chat background" onClick={() => setShowBgPicker(true)}><Image size={17} /></button>
+          <button className="icon-toggle danger-icon" title="Clear chat" onClick={handleClearChat} disabled={messages.length === 0}><Trash2 size={17} /></button>
         </div>
       </div>
 
