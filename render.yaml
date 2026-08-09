@@ -23,12 +23,11 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL
-        value: "Pulse <onboarding@resend.dev>"
+        value: "Ruphen <onboarding@resend.dev>"
 
   - type: web
     name: pulse-frontend
     runtime: static
-    plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
