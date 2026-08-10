@@ -28,7 +28,7 @@ export default function ForgotPassword() {
       <div className="auth-hero">
         <div className="auth-hero-content">
           <div className="auth-hero-mark" />
-          <h1>Pulse</h1>
+          <h1>Jana</h1>
           <p>Real-time conversations, beautifully simple.</p>
         </div>
       </div>
@@ -57,3 +57,4 @@ export default function ForgotPassword() {
     </div>
   );
 }
+

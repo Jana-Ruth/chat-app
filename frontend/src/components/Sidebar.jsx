@@ -107,7 +107,7 @@ export default function Sidebar({ conversations, activeId, onSelect, onConversat
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <span className="wordmark">Pulse</span>
+        <span className="wordmark">Jana</span>
         <span className="sidebar-kicker">Secure messaging</span>
       </div>
 
@@ -234,3 +234,4 @@ export default function Sidebar({ conversations, activeId, onSelect, onConversat
     </aside>
   );
 }
+

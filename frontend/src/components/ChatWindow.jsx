@@ -26,6 +26,7 @@ import {
   Phone,
   Reply,
   Search,
+  SendHorizontal,
   Smile,
   Square,
   Trash2,
@@ -33,6 +34,12 @@ import {
   Video,
   X,
 } from 'lucide-react';
+
+function recorderTimeLabel(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remaining = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${remaining}`;
+}
 
 function backgroundStorageKey(conversationId) {
   return `chatBg:${conversationId}`;
@@ -701,27 +708,63 @@ export default function ChatWindow({ conversation, onConversationUpdated, onLeft
           <Paperclip size={18} />
         </button>
 
-        <button
-          type="button"
-          className={`icon-btn ${voiceRecorder.recording ? 'recording' : ''}`}
-          title={voiceRecorder.recording ? 'Stop recording' : 'Record voice note'}
-          onClick={handleVoiceToggle}
-          disabled={uploading}
-        >
-          {voiceRecorder.recording ? <><Square size={14} /> {voiceRecorder.seconds}s</> : <Mic size={18} />}
-        </button>
+        {voiceRecorder.recording ? (
+          <div className="voice-recorder-panel" role="status" aria-live="polite">
+            <button
+              type="button"
+              className="voice-recorder-cancel"
+              title="Cancel voice note"
+              onClick={voiceRecorder.cancel}
+              disabled={uploading}
+            >
+              <X size={16} />
+            </button>
+            <div className="voice-recorder-live">
+              <span className="recording-dot" aria-hidden="true"></span>
+              <span className="voice-recorder-copy">
+                <strong>Recording</strong>
+                <small>{recorderTimeLabel(voiceRecorder.seconds)}</small>
+              </span>
+              <span className="voice-recorder-wave" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </span>
+            </div>
+            <button
+              type="button"
+              className="voice-recorder-send"
+              title="Send voice note"
+              onClick={handleVoiceToggle}
+              disabled={uploading}
+            >
+              {uploading ? <Square size={16} /> : <SendHorizontal size={17} />}
+            </button>
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="icon-btn"
+              title="Record voice note"
+              onClick={handleVoiceToggle}
+              disabled={uploading}
+            >
+              <Mic size={18} />
+            </button>
 
-        <input
-          type="text"
-          placeholder={voiceRecorder.recording ? 'Recording voice note...' : 'Type a message...'}
-          value={text}
-          onChange={handleChange}
-          disabled={voiceRecorder.recording}
-        />
-        <button type="submit" disabled={uploading || voiceRecorder.recording}>
-          {uploading ? '...' : 'Send'}
-        </button>
+            <input
+              type="text"
+              placeholder="Type a message..."
+              value={text}
+              onChange={handleChange}
+            />
+            <button type="submit" disabled={uploading}>
+              {uploading ? '...' : 'Send'}
+            </button>
+          </>
+        )}
       </form>
     </div>
   );
 }
+
+

@@ -1,6 +1,7 @@
 const Post = require('../models/Post');
 const User = require('../models/User');
 const Conversation = require('../models/Conversation');
+const { uploadBuffer } = require('../config/cloudinary');
 const { attachmentTypeFor } = require('../middleware/upload');
 
 // ids of users blocked-in-either-direction relative to the viewer
@@ -54,9 +55,10 @@ async function createPost(req, res) {
     }
 
     const folder = type === 'image' ? 'images' : 'videos';
+    const media = await uploadBuffer(req.file, { folder, type });
     const post = await Post.create({
       author: req.userId,
-      mediaUrl: `/uploads/${folder}/${req.file.filename}`,
+      mediaUrl: media.secure_url,
       mediaType: type,
       caption: (caption || '').trim().slice(0, 1000),
       visibility: ['everyone', 'contacts', 'custom'].includes(visibility) ? visibility : 'contacts',
@@ -115,3 +117,6 @@ async function deletePost(req, res) {
 }
 
 module.exports = { createPost, getFeed, getUserPosts, deletePost };
+
+
+

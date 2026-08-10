@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
 const { sendPasswordResetEmail } = require('../config/email');
+const { uploadBuffer } = require('../config/cloudinary');
 
 function signToken(userId) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET, {
@@ -25,7 +26,11 @@ async function register(req, res) {
       return res.status(409).json({ error: 'Username or email already in use' });
     }
 
-    const avatarUrl = req.file ? `/uploads/avatars/${req.file.filename}` : '';
+    let avatarUrl = '';
+    if (req.file) {
+      const avatar = await uploadBuffer(req.file, { folder: 'avatars', type: 'avatar' });
+      avatarUrl = avatar.secure_url;
+    }
 
     const user = await User.create({
       username,
@@ -145,3 +150,6 @@ async function resetPassword(req, res) {
 }
 
 module.exports = { register, login, me, forgotPassword, resetPassword };
+
+
+

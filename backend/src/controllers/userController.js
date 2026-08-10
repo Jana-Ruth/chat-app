@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const { uploadBuffer } = require('../config/cloudinary');
 
 // GET /api/users/search?q=ruth
 async function searchUsers(req, res) {
@@ -59,7 +60,10 @@ async function updateProfile(req, res) {
     }
     if (bio !== undefined) update.bio = bio.trim().slice(0, 300);
     if (phone !== undefined) update.phone = phone.trim().slice(0, 20);
-    if (req.file) update.avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    if (req.file) {
+      const avatar = await uploadBuffer(req.file, { folder: 'avatars', type: 'avatar' });
+      update.avatarUrl = avatar.secure_url;
+    }
 
     const user = await User.findByIdAndUpdate(req.userId, update, { new: true, runValidators: true });
     res.json({ user: user.toSafeObject() });
@@ -120,3 +124,6 @@ module.exports = {
   unblockUser,
   listBlocked,
 };
+
+
+
